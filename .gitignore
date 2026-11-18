@@ -1,0 +1,49 @@
+# Infrastructure & Heavy Precompiled Binaries
+elasticsearch-9.4.4-windows-x86_64/
+kibana-9.4.4/
+winlogbeat-9.4.4-windows-x86_64/
+nessus/
+
+# Archives and Installer Zips
+*.zip
+*.7z
+*.tar
+*.gz
+*.rar
+
+# Large Binaries exceeding GitHub 100MB limit
+*.exe
+web vulnerability scanner/bin/
+
+# Cloned Upstream Sub-repositories
+web vulnerability scanner/archerysec/
+web vulnerability scanner/defectdojo/
+
+# Test output and debug text logs
+*.log
+all_tests*.txt
+*_results.txt
+es_debug_*.txt
+smoke_test.txt
+test_run.txt
+run_nuc.txt
+nuclei_*.txt
+err_check.txt
+
+# Python & Runtime Caches
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.agents/
+
+# Databases and Local Scans
+*.db
+*.sqlite
+*.sqlite3
+aegisai/app/scans/
+*.log
+
+# Environment & Secrets
+.env
+.env.local

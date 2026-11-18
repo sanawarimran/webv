@@ -1,0 +1,9 @@
+/target:winexe
+/win32icon:"G:\elastic Search\Provilance\assets\provilance.ico"
+/out:"G:\elastic Search\Provilance\ProvilanceSetup.exe"
+/reference:System.Windows.Forms.dll
+/reference:System.Drawing.dll
+/reference:System.dll
+/reference:System.Core.dll
+/reference:Microsoft.CSharp.dll
+"G:\elastic Search\Provilance\src\ProvilanceSetup.cs"

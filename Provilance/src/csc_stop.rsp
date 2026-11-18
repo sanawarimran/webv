@@ -1,0 +1,7 @@
+/target:winexe
+/win32icon:"G:\elastic Search\Provilance\assets\provilance.ico"
+/out:"G:\elastic Search\Provilance\bin\Stop-Provilance.exe"
+/reference:System.Windows.Forms.dll
+/reference:System.Drawing.dll
+/reference:System.dll
+"G:\elastic Search\Provilance\src\StopProvilance.cs"

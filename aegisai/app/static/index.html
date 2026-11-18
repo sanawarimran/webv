@@ -1,0 +1,757 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AegisAI - Vulnerability Detection Platform | Provilance Technologies</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    body { background-color: #0b0f19; color: #e2e8f0; font-family: ui-sans-serif, system-ui, sans-serif; }
+    .glass-card { background: rgba(17, 24, 39, 0.7); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.08); }
+    .badge-critical { background: rgba(239, 68, 68, 0.2); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.4); }
+    .badge-high { background: rgba(249, 115, 22, 0.2); color: #fb923c; border: 1px solid rgba(249, 115, 22, 0.4); }
+    .badge-medium { background: rgba(234, 179, 8, 0.2); color: #facc15; border: 1px solid rgba(234, 179, 8, 0.4); }
+    .badge-low { background: rgba(59, 130, 246, 0.2); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.4); }
+    .badge-info { background: rgba(107, 114, 128, 0.2); color: #9ca3af; border: 1px solid rgba(107, 114, 128, 0.4); }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+  <!-- Navigation Bar -->
+  <header class="border-b border-gray-800 bg-gray-900/80 sticky top-0 z-50 backdrop-blur-md">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      <div class="flex items-center space-x-3">
+        <div class="w-9 h-9 rounded-lg bg-gradient-to-tr from-cyan-500 to-emerald-400 flex items-center justify-center text-gray-900 font-bold text-lg shadow-lg shadow-cyan-500/20">
+          <i class="fa-solid fa-shield-halved"></i>
+        </div>
+        <div>
+          <span class="text-xl font-bold tracking-tight text-white">Aegis<span class="text-cyan-400">AI</span></span>
+          <span class="ml-2 text-xs px-2 py-0.5 rounded bg-cyan-950 text-cyan-300 border border-cyan-800">DETECTION SAAS</span>
+        </div>
+      </div>
+      
+      <div class="flex items-center space-x-4">
+        <div id="user-pill" class="hidden items-center space-x-2 text-sm text-gray-300 bg-gray-800/80 px-3 py-1.5 rounded-full border border-gray-700">
+          <i class="fa-regular fa-user text-cyan-400"></i>
+          <span id="nav-username" class="font-medium">User</span>
+          <span class="text-xs text-gray-500">|</span>
+          <span id="nav-tenant" class="text-xs text-cyan-400 font-semibold">Tenant</span>
+          <button onclick="logout()" class="ml-2 text-xs text-red-400 hover:text-red-300" title="Logout"><i class="fa-solid fa-power-off"></i></button>
+        </div>
+        <a href="/docs" target="_blank" class="text-xs text-gray-400 hover:text-gray-200"><i class="fa-solid fa-book mr-1"></i>API Docs</a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Auth Required Notice -->
+  <div id="auth-modal" class="max-w-md mx-auto my-12 p-8 glass-card rounded-2xl shadow-2xl">
+    <div class="text-center mb-6">
+      <h2 class="text-2xl font-bold text-white mb-2">Welcome to AegisAI</h2>
+      <p class="text-sm text-gray-400">Sign in to your organization tenant or create an account</p>
+    </div>
+    
+    <div class="flex border-b border-gray-700 mb-6">
+      <button id="tab-login" onclick="showAuthTab('login')" class="flex-1 pb-3 text-sm font-semibold text-cyan-400 border-b-2 border-cyan-400">Login</button>
+      <button id="tab-register" onclick="showAuthTab('register')" class="flex-1 pb-3 text-sm font-semibold text-gray-400 border-b-2 border-transparent">Register</button>
+    </div>
+
+    <!-- Default Admin Helper Box -->
+    <div class="bg-cyan-950/40 border border-cyan-800/80 rounded-xl p-3.5 mb-5 text-xs">
+      <div class="font-semibold text-cyan-300 flex items-center justify-between mb-1.5">
+        <span class="flex items-center"><i class="fa-solid fa-key text-cyan-400 mr-2"></i>Default Administrator Credentials</span>
+        <button type="button" onclick="fillAdminCreds()" class="text-[11px] bg-cyan-700 hover:bg-cyan-600 text-white px-2 py-0.5 rounded font-mono transition">Auto Fill</button>
+      </div>
+      <div class="text-gray-300 font-mono text-[11px] space-y-1">
+        <div>Email: <span class="text-white bg-black/40 px-1.5 py-0.5 rounded select-all font-semibold">admin@aegisai.com</span></div>
+        <div>Password: <span class="text-white bg-black/40 px-1.5 py-0.5 rounded select-all font-semibold">admin123</span></div>
+        <div class="text-[10px] text-gray-400 font-sans mt-1">Tenant: <span class="text-cyan-400">Provilance Technologies</span></div>
+      </div>
+    </div>
+
+    <form id="login-form" onsubmit="handleLogin(event)" class="space-y-4">
+      <div>
+        <label class="block text-xs font-semibold uppercase tracking-wider text-gray-400 mb-1">Email</label>
+        <input id="login-email" type="email" required value="admin@aegisai.com" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-cyan-500" placeholder="admin@aegisai.com">
+      </div>
+      <div>
+        <label class="block text-xs font-semibold uppercase tracking-wider text-gray-400 mb-1">Password</label>
+        <input id="login-password" type="password" required value="admin123" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-cyan-500" placeholder="••••••••">
+      </div>
+      <button type="submit" class="w-full bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-semibold py-2.5 rounded-lg shadow-lg shadow-cyan-500/25 transition">Sign In as Admin</button>
+    </form>
+
+    <form id="register-form" onsubmit="handleRegister(event)" class="space-y-4 hidden">
+      <div>
+        <label class="block text-xs font-semibold uppercase tracking-wider text-gray-400 mb-1">Organization Name</label>
+        <input id="reg-org" type="text" required class="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-cyan-500" placeholder="Acme Security Corp">
+      </div>
+      <div>
+        <label class="block text-xs font-semibold uppercase tracking-wider text-gray-400 mb-1">Full Name</label>
+        <input id="reg-name" type="text" required class="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-cyan-500" placeholder="Alice Smith">
+      </div>
+      <div>
+        <label class="block text-xs font-semibold uppercase tracking-wider text-gray-400 mb-1">Email</label>
+        <input id="reg-email" type="email" required class="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-cyan-500" placeholder="alice@acme.com">
+      </div>
+      <div>
+        <label class="block text-xs font-semibold uppercase tracking-wider text-gray-400 mb-1">Password</label>
+        <input id="reg-password" type="password" required class="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-cyan-500" placeholder="••••••••">
+      </div>
+      <button type="submit" class="w-full bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white font-semibold py-2.5 rounded-lg shadow-lg shadow-emerald-500/25 transition">Create Account & Tenant</button>
+    </form>
+    <div id="auth-error" class="mt-4 text-xs text-red-400 hidden"></div>
+  </div>
+
+  <!-- Main Dashboard App (Visible when logged in) -->
+  <main id="app-view" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-1 w-full hidden space-y-8">
+
+    <!-- Top Action Banner -->
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 glass-card p-6 rounded-2xl">
+      <div>
+        <div class="flex items-center space-x-2">
+          <h1 class="text-2xl font-bold text-white">Detection & Vulnerability Overview</h1>
+          <span class="text-[10px] bg-red-950 text-red-400 border border-red-800 px-2 py-0.5 rounded font-mono">CISA KEV SYNCED</span>
+          <span class="text-[10px] bg-blue-950 text-blue-400 border border-blue-800 px-2 py-0.5 rounded font-mono">EPSS INTEL</span>
+        </div>
+        <p class="text-sm text-gray-400 mt-1">Multi-tool scanning engine with SSRF guardrails, real-time threat intelligence, and automatic email reporting.</p>
+      </div>
+      <div class="flex items-center space-x-3">
+        <button onclick="openAddTargetModal()" class="px-4 py-2.5 bg-gray-800 hover:bg-gray-700 border border-gray-700 rounded-xl text-sm font-semibold text-white transition flex items-center">
+          <i class="fa-solid fa-plus mr-2 text-cyan-400"></i>Add Target
+        </button>
+        <button onclick="openLaunchScanModal()" class="px-5 py-2.5 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-semibold rounded-xl text-sm shadow-lg shadow-cyan-500/25 transition flex items-center">
+          <i class="fa-solid fa-bolt mr-2"></i>Launch Scan
+        </button>
+      </div>
+    </div>
+
+    <!-- Targets Section -->
+    <div class="glass-card rounded-2xl p-6">
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="text-lg font-bold text-white flex items-center">
+          <i class="fa-solid fa-crosshairs text-cyan-400 mr-2"></i>Monitored Targets
+        </h2>
+        <span id="target-count" class="text-xs px-2.5 py-1 rounded-full bg-gray-800 text-gray-300 font-mono">0 targets</span>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="w-full text-left text-sm">
+          <thead class="text-xs uppercase text-gray-400 border-b border-gray-800">
+            <tr>
+              <th class="py-3 px-4">Target URL</th>
+              <th class="py-3 px-4">Domain</th>
+              <th class="py-3 px-4">Ownership Status</th>
+              <th class="py-3 px-4">Verified At</th>
+              <th class="py-3 px-4 text-right">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="targets-table-body" class="divide-y divide-gray-800">
+            <tr>
+              <td colspan="5" class="py-6 text-center text-gray-500">No targets registered yet. Click 'Add Target' above.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Scans & Findings Grid -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      
+      <!-- Scans List (Left Column) -->
+      <div class="glass-card rounded-2xl p-6">
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="text-lg font-bold text-white flex items-center">
+            <i class="fa-solid fa-clock-rotate-left text-cyan-400 mr-2"></i>Scan History
+          </h2>
+          <button onclick="loadScans()" class="text-xs text-gray-400 hover:text-white" title="Refresh Scans"><i class="fa-solid fa-rotate-right"></i></button>
+        </div>
+        <div id="scans-list" class="space-y-3 max-h-[550px] overflow-y-auto pr-1">
+          <div class="text-center py-8 text-gray-500 text-xs">No scans launched yet. Click 'Launch Scan' to begin.</div>
+        </div>
+      </div>
+
+      <!-- Findings Explorer (Right 2 Columns) -->
+      <div class="lg:col-span-2 glass-card rounded-2xl p-6 flex flex-col">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+          <div>
+            <h2 class="text-lg font-bold text-white flex items-center">
+              <i class="fa-solid fa-bug text-red-400 mr-2"></i>Deduplicated Findings
+            </h2>
+            <p id="findings-subtitle" class="text-xs text-gray-400">Select a scan on the left to inspect discovered vulnerabilities</p>
+          </div>
+          <div id="export-buttons" class="hidden flex items-center space-x-2">
+            <button onclick="exportReport('pdf')" class="text-xs px-2.5 py-1.5 bg-rose-950/80 hover:bg-rose-900 text-rose-300 rounded-lg border border-rose-800 font-semibold flex items-center"><i class="fa-solid fa-file-pdf mr-1"></i>PDF Report</button>
+            <button onclick="exportReport('json')" class="text-xs px-2.5 py-1.5 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-lg border border-gray-700"><i class="fa-solid fa-download mr-1"></i>JSON</button>
+            <button onclick="exportReport('sarif')" class="text-xs px-2.5 py-1.5 bg-gray-800 hover:bg-gray-700 text-cyan-300 rounded-lg border border-cyan-800"><i class="fa-solid fa-code mr-1"></i>SARIF 2.1</button>
+            <button onclick="exportReport('csv')" class="text-xs px-2.5 py-1.5 bg-gray-800 hover:bg-gray-700 text-emerald-300 rounded-lg border border-emerald-800"><i class="fa-solid fa-file-csv mr-1"></i>CSV</button>
+          </div>
+        </div>
+
+        <div id="findings-container" class="flex-1 space-y-3 max-h-[550px] overflow-y-auto pr-1">
+          <div class="h-64 flex flex-col items-center justify-center text-gray-500 text-sm">
+            <i class="fa-solid fa-shield-halved text-4xl mb-3 text-gray-600"></i>
+            <span>No scan selected. Launch a scan to view genuine findings.</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+  </main>
+
+  <!-- Add Target Modal -->
+  <div id="add-target-modal" class="fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50 hidden">
+    <div class="glass-card max-w-lg w-full rounded-2xl p-6 border border-gray-700">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-lg font-bold text-white">Add Target Website</h3>
+        <button onclick="closeModal('add-target-modal')" class="text-gray-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <form onsubmit="handleCreateTarget(event)" class="space-y-4">
+        <div>
+          <label class="block text-xs font-semibold uppercase tracking-wider text-gray-400 mb-1">Target URL</label>
+          <input id="target-url-input" type="url" required placeholder="https://example.com" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-cyan-500">
+          <p class="text-xs text-gray-500 mt-1">Must be an HTTP/HTTPS endpoint you legally own or control.</p>
+        </div>
+        <div class="bg-gray-900/60 p-3 rounded-lg border border-gray-800 text-xs text-gray-400">
+          <i class="fa-solid fa-circle-info text-cyan-400 mr-1"></i>
+          SSRF protection strictly blocks 127.0.0.1, 10.0.0.0/8, 192.168.0.0/16, 172.16.0.0/12, and 169.254.169.254.
+        </div>
+        <div class="flex justify-end space-x-3 pt-2">
+          <button type="button" onclick="closeModal('add-target-modal')" class="px-4 py-2 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-lg text-sm font-medium">Cancel</button>
+          <button type="submit" class="px-5 py-2 bg-cyan-600 hover:bg-cyan-500 text-white rounded-lg text-sm font-medium">Add & Generate Token</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Target Verification Modal -->
+  <div id="verify-modal" class="fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50 hidden">
+    <div class="glass-card max-w-xl w-full rounded-2xl p-6 border border-cyan-800">
+      <div class="flex items-center justify-between mb-3">
+        <h3 class="text-lg font-bold text-white flex items-center">
+          <i class="fa-solid fa-fingerprint text-cyan-400 mr-2"></i>Prove Domain Ownership
+        </h3>
+        <button onclick="closeModal('verify-modal')" class="text-gray-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <p class="text-xs text-gray-400 mb-4">Complete one of the methods below on <span id="verify-domain-label" class="text-cyan-300 font-mono"></span> (valid for 90 days):</p>
+      
+      <div class="space-y-4 text-xs">
+        <!-- Method 1: DNS TXT -->
+        <div class="bg-gray-900/80 p-4 rounded-xl border border-gray-800">
+          <div class="font-semibold text-gray-200 mb-1 flex items-center">
+            <span class="w-5 h-5 rounded-full bg-cyan-900 text-cyan-300 flex items-center justify-center text-xs mr-2">1</span>
+            Method A: DNS TXT Record
+          </div>
+          <p class="text-gray-400 mb-2">Add this TXT record to your target domain's root DNS zone:</p>
+          <div class="bg-black/60 p-2.5 rounded font-mono text-cyan-300 select-all border border-gray-800 break-all" id="verify-dns-txt"></div>
+        </div>
+
+        <!-- Method 2: HTTP Well-Known -->
+        <div class="bg-gray-900/80 p-4 rounded-xl border border-gray-800">
+          <div class="font-semibold text-gray-200 mb-1 flex items-center">
+            <span class="w-5 h-5 rounded-full bg-cyan-900 text-cyan-300 flex items-center justify-center text-xs mr-2">2</span>
+            Method B: HTTP Well-Known File
+          </div>
+          <p class="text-gray-400 mb-1">Create file at: <code class="text-amber-300">/.well-known/aegisai-verify.txt</code></p>
+          <p class="text-gray-400 mb-2">Content must equal your token:</p>
+          <div class="bg-black/60 p-2.5 rounded font-mono text-cyan-300 select-all border border-gray-800 break-all" id="verify-http-token"></div>
+        </div>
+      </div>
+
+      <div class="mt-6 flex flex-col sm:flex-row justify-between items-center gap-3">
+        <button onclick="triggerVerification(true)" class="text-xs text-amber-400 hover:text-amber-300 underline">
+          <i class="fa-solid fa-vial mr-1"></i>Authorize Domain for Testing (Dev Mode)
+        </button>
+        <div class="flex space-x-3">
+          <button onclick="closeModal('verify-modal')" class="px-4 py-2 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-lg text-sm font-medium">Close</button>
+          <button id="verify-action-btn" onclick="triggerVerification(false)" class="px-5 py-2 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white rounded-lg text-sm font-semibold flex items-center">
+            <i class="fa-solid fa-circle-check mr-2"></i>Verify via DNS/HTTP
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Launch Scan Modal -->
+  <div id="launch-scan-modal" class="fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50 hidden">
+    <div class="glass-card max-w-lg w-full rounded-2xl p-6 border border-gray-700">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-lg font-bold text-white flex items-center">
+          <i class="fa-solid fa-rocket text-cyan-400 mr-2"></i>Launch Detection Scan
+        </h3>
+        <button onclick="closeModal('launch-scan-modal')" class="text-gray-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      
+      <form onsubmit="handleLaunchScan(event)" class="space-y-4">
+        <div>
+          <label class="block text-xs font-semibold uppercase tracking-wider text-gray-400 mb-1">Select Verified Target</label>
+          <select id="scan-target-select" required class="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-cyan-500 text-sm">
+            <option value="">-- Choose Target --</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold uppercase tracking-wider text-gray-400 mb-1">Scan Profile</label>
+          <div class="grid grid-cols-3 gap-2">
+            <label class="p-3 bg-gray-900 border border-gray-700 rounded-xl cursor-pointer hover:border-cyan-500">
+              <input type="radio" name="scan-profile" value="quick" class="hidden peer">
+              <div class="peer-checked:text-cyan-400 font-semibold text-xs text-white">Quick</div>
+              <div class="text-[10px] text-gray-400 mt-1">Passive checks, TLS, Headers, Ports</div>
+            </label>
+            <label class="p-3 bg-gray-900 border border-cyan-500 rounded-xl cursor-pointer">
+              <input type="radio" name="scan-profile" value="standard" checked class="hidden peer">
+              <div class="peer-checked:text-cyan-400 font-semibold text-xs text-cyan-400">Standard</div>
+              <div class="text-[10px] text-gray-400 mt-1">Nuclei T1, WPScan, ZAP, Exposure</div>
+            </label>
+            <label class="p-3 bg-gray-900 border border-gray-700 rounded-xl cursor-pointer hover:border-cyan-500">
+              <input type="radio" name="scan-profile" value="deep" class="hidden peer">
+              <div class="peer-checked:text-cyan-400 font-semibold text-xs text-white">Deep</div>
+              <div class="text-[10px] text-gray-400 mt-1">Standard + Nuclei DAST (T2 Consent)</div>
+            </label>
+          </div>
+        </div>
+
+        <!-- T2 Consent Toggle -->
+        <div id="t2-consent-box" class="bg-gray-900/80 p-3 rounded-xl border border-gray-800 text-xs">
+          <label class="flex items-start space-x-2 cursor-pointer">
+            <input id="scan-consent-t2" type="checkbox" class="mt-0.5 rounded bg-gray-950 border-gray-700 text-cyan-500 focus:ring-0">
+            <span class="text-gray-300">
+              <strong>Explicit T2 Consent:</strong> I verify that I own or hold written authorization to run active non-destructive vulnerability detection probes against this target.
+            </span>
+          </label>
+        </div>
+
+        <div class="bg-red-950/20 border border-red-900/50 p-2.5 rounded-lg text-[11px] text-red-300">
+          <i class="fa-solid fa-shield-virus mr-1"></i>
+          <strong>Safety Policy:</strong> AegisAI is strictly detection-only. T3 exploit-capable tools (sqlmap, brute-force, data exfiltration) are permanently disabled.
+        </div>
+
+        <div class="flex justify-end space-x-3 pt-2">
+          <button type="button" onclick="closeModal('launch-scan-modal')" class="px-4 py-2 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-lg text-sm font-medium">Cancel</button>
+          <button type="submit" class="px-5 py-2 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white rounded-lg text-sm font-semibold shadow-lg shadow-cyan-500/20">Start Scan</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    const API_BASE = "/api/v1";
+    let currentToken = localStorage.getItem("aegis_token") || null;
+    let targetsList = [];
+    let currentScanId = null;
+    let activeVerifyingTargetId = null;
+    let pollInterval = null;
+
+    function fillAdminCreds() {
+      showAuthTab('login');
+      document.getElementById("login-email").value = "admin@aegisai.com";
+      document.getElementById("login-password").value = "admin123";
+    }
+
+    function showAuthTab(tab) {
+      if (tab === 'login') {
+        document.getElementById('login-form').classList.remove('hidden');
+        document.getElementById('register-form').classList.add('hidden');
+        document.getElementById('tab-login').className = "flex-1 pb-3 text-sm font-semibold text-cyan-400 border-b-2 border-cyan-400";
+        document.getElementById('tab-register').className = "flex-1 pb-3 text-sm font-semibold text-gray-400 border-b-2 border-transparent";
+      } else {
+        document.getElementById('login-form').classList.add('hidden');
+        document.getElementById('register-form').classList.remove('hidden');
+        document.getElementById('tab-register').className = "flex-1 pb-3 text-sm font-semibold text-cyan-400 border-b-2 border-cyan-400";
+        document.getElementById('tab-login').className = "flex-1 pb-3 text-sm font-semibold text-gray-400 border-b-2 border-transparent";
+      }
+    }
+
+    async function handleLogin(e) {
+      e.preventDefault();
+      const email = document.getElementById("login-email").value;
+      const password = document.getElementById("login-password").value;
+      const errBox = document.getElementById("auth-error");
+      errBox.classList.add("hidden");
+
+      try {
+        const res = await fetch(`${API_BASE}/auth/login`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, password })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || "Login failed");
+        
+        localStorage.setItem("aegis_token", data.access_token);
+        currentToken = data.access_token;
+        initApp();
+      } catch (err) {
+        errBox.innerText = err.message;
+        errBox.classList.remove("hidden");
+      }
+    }
+
+    async function handleRegister(e) {
+      e.preventDefault();
+      const org_name = document.getElementById("reg-org").value;
+      const email = document.getElementById("reg-email").value;
+      const password = document.getElementById("reg-password").value;
+      const errBox = document.getElementById("auth-error");
+      errBox.classList.add("hidden");
+
+      try {
+        const res = await fetch(`${API_BASE}/auth/register`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ tenant_name: org_name, email, password })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || "Registration failed");
+
+        document.getElementById("login-email").value = email;
+        document.getElementById("login-password").value = password;
+        handleLogin(e);
+      } catch (err) {
+        errBox.innerText = err.message;
+        errBox.classList.remove("hidden");
+      }
+    }
+
+    function logout() {
+      localStorage.removeItem("aegis_token");
+      if (pollInterval) clearInterval(pollInterval);
+      location.reload();
+    }
+
+    function closeModal(id) {
+      document.getElementById(id).classList.add("hidden");
+    }
+
+    async function initApp() {
+      if (!currentToken) {
+        document.getElementById("auth-modal").classList.remove("hidden");
+        document.getElementById("app-view").classList.add("hidden");
+        document.getElementById("user-pill").classList.add("hidden");
+        return;
+      }
+
+      try {
+        const parts = currentToken.split('.');
+        const payload = JSON.parse(atob(parts[1]));
+        document.getElementById("nav-username").innerText = payload.sub || "User";
+        document.getElementById("nav-tenant").innerText = payload.tenant_id.slice(0, 8);
+        document.getElementById("auth-modal").classList.add("hidden");
+        document.getElementById("app-view").classList.remove("hidden");
+        document.getElementById("user-pill").classList.remove("hidden");
+        document.getElementById("user-pill").classList.add("flex");
+
+        await loadTargets();
+        await loadScans();
+
+        if (!pollInterval) {
+          pollInterval = setInterval(pollScans, 4000);
+        }
+      } catch (e) {
+        logout();
+      }
+    }
+
+    async function loadTargets() {
+      const res = await fetch(`${API_BASE}/targets`, {
+        headers: { "Authorization": `Bearer ${currentToken}` }
+      });
+      if (!res.ok) return;
+      targetsList = await res.json();
+      
+      document.getElementById("target-count").innerText = `${targetsList.length} targets`;
+      const tbody = document.getElementById("targets-table-body");
+      const scanSelect = document.getElementById("scan-target-select");
+      
+      scanSelect.innerHTML = '<option value="">-- Choose Verified Target --</option>';
+
+      if (targetsList.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" class="py-6 text-center text-gray-500">No targets registered yet. Click \'Add Target\' above.</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = targetsList.map(t => {
+        if (t.is_verified) {
+          scanSelect.innerHTML += `<option value="${t.id}">${t.domain} (${t.url})</option>`;
+        }
+        const statusBadge = t.is_verified 
+          ? `<span class="px-2 py-0.5 rounded text-xs bg-emerald-950 text-emerald-400 border border-emerald-800"><i class="fa-solid fa-circle-check mr-1"></i>Verified</span>`
+          : `<span class="px-2 py-0.5 rounded text-xs bg-amber-950 text-amber-400 border border-amber-800"><i class="fa-solid fa-clock mr-1"></i>Unverified</span>`;
+
+        return `
+          <tr class="hover:bg-gray-800/40">
+            <td class="py-3 px-4 font-mono text-cyan-300 font-medium">${t.url}</td>
+            <td class="py-3 px-4 text-gray-300">${t.domain}</td>
+            <td class="py-3 px-4">${statusBadge}</td>
+            <td class="py-3 px-4 text-xs text-gray-500">${t.verified_at ? new Date(t.verified_at).toLocaleDateString() : 'Pending'}</td>
+            <td class="py-3 px-4 text-right">
+              ${!t.is_verified ? `<button onclick="openVerifyModal('${t.id}')" class="text-xs px-2.5 py-1 bg-cyan-950 hover:bg-cyan-900 text-cyan-300 border border-cyan-800 rounded-lg">Verify Domain</button>` : `<span class="text-xs text-emerald-400">Ready to Scan</span>`}
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function openAddTargetModal() {
+      document.getElementById("target-url-input").value = "";
+      document.getElementById("add-target-modal").classList.remove("hidden");
+    }
+
+    async function handleCreateTarget(e) {
+      e.preventDefault();
+      const url = document.getElementById("target-url-input").value;
+      try {
+        const res = await fetch(`${API_BASE}/targets`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${currentToken}`
+          },
+          body: JSON.stringify({ url })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || "Failed to add target");
+        closeModal("add-target-modal");
+        await loadTargets();
+        if (!data.is_verified) {
+          openVerifyModal(data.id);
+        }
+      } catch (err) {
+        alert(err.message);
+      }
+    }
+
+    function openVerifyModal(targetId) {
+      const target = targetsList.find(t => t.id === targetId);
+      if (!target) return;
+      activeVerifyingTargetId = targetId;
+      document.getElementById("verify-domain-label").innerText = target.domain;
+      document.getElementById("verify-dns-txt").innerText = `aegisai-verify=${target.verification_token}`;
+      document.getElementById("verify-http-token").innerText = target.verification_token;
+      document.getElementById("verify-modal").classList.remove("hidden");
+    }
+
+    async function triggerVerification(force = false) {
+      if (!activeVerifyingTargetId) return;
+      const btn = document.getElementById("verify-action-btn");
+      btn.innerText = force ? "Authorizing..." : "Verifying DNS / HTTP...";
+      btn.disabled = true;
+
+      try {
+        const endpoint = `${API_BASE}/targets/${activeVerifyingTargetId}/verify${force ? '?force=true' : ''}`;
+        const res = await fetch(endpoint, {
+          method: "POST",
+          headers: { "Authorization": `Bearer ${currentToken}` }
+        });
+        const data = await res.json();
+        if (data.status === "verified") {
+          alert("Domain ownership successfully verified! Valid for 90 days.");
+          closeModal("verify-modal");
+          await loadTargets();
+        } else {
+          alert(data.message || data.detail || "Verification check could not confirm DNS TXT or HTTP token.");
+        }
+      } catch (e) {
+        alert("Verification error: " + e.message);
+      } finally {
+        btn.innerHTML = `<i class="fa-solid fa-circle-check mr-2"></i>Verify via DNS/HTTP`;
+        btn.disabled = false;
+      }
+    }
+
+    function openLaunchScanModal() {
+      document.getElementById("launch-scan-modal").classList.remove("hidden");
+    }
+
+    async function handleLaunchScan(e) {
+      e.preventDefault();
+      const target_id = document.getElementById("scan-target-select").value;
+      if (!target_id) {
+        alert("Please select a verified target.");
+        return;
+      }
+      const profile = document.querySelector('input[name="scan-profile"]:checked').value;
+      const consent_t2 = document.getElementById("scan-consent-t2").checked;
+
+      if (profile === "deep" && !consent_t2) {
+        alert("Deep scan includes T2 DAST parameter checks. You must check the Explicit T2 Consent box.");
+        return;
+      }
+
+      const tiers = consent_t2 ? ["T1", "T2"] : ["T1"];
+
+      try {
+        const res = await fetch(`${API_BASE}/scans`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${currentToken}`
+          },
+          body: JSON.stringify({ target_id, profile, tiers, consent_t2 })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || "Failed to launch scan");
+
+        closeModal("launch-scan-modal");
+        await loadScans();
+        selectScan(data.id);
+      } catch (err) {
+        alert(err.message);
+      }
+    }
+
+    async function loadScans() {
+      const res = await fetch(`${API_BASE}/scans`, {
+        headers: { "Authorization": `Bearer ${currentToken}` }
+      });
+      if (!res.ok) return;
+      const scans = await res.json();
+      const listDiv = document.getElementById("scans-list");
+
+      if (scans.length === 0) {
+        listDiv.innerHTML = '<div class="text-center py-8 text-gray-500 text-xs">No scans launched yet. Click \'Launch Scan\' to begin.</div>';
+        return;
+      }
+
+      listDiv.innerHTML = scans.map(s => {
+        const statusColors = {
+          completed: "bg-emerald-950 text-emerald-400 border-emerald-800",
+          running: "bg-cyan-950 text-cyan-400 border-cyan-800 animate-pulse",
+          queued: "bg-gray-800 text-gray-400 border-gray-700",
+          failed: "bg-red-950 text-red-400 border-red-800",
+          cancelled: "bg-gray-800 text-gray-500 border-gray-700"
+        };
+        const badgeClass = statusColors[s.status] || "bg-gray-800 text-gray-400 border-gray-700";
+        const isSelected = s.id === currentScanId ? "border-cyan-500 bg-gray-800/80 shadow-md" : "border-gray-800 bg-gray-900/50 hover:bg-gray-800/40";
+
+        return `
+          <div onclick="selectScan('${s.id}')" class="p-3.5 rounded-xl border ${isSelected} cursor-pointer transition">
+            <div class="flex items-center justify-between mb-1.5">
+              <span class="text-xs uppercase font-semibold text-gray-300">${s.profile} SCAN</span>
+              <span class="text-[10px] px-2 py-0.5 rounded border uppercase font-medium ${badgeClass}">${s.status}</span>
+            </div>
+            <div class="text-xs text-gray-400 flex items-center justify-between">
+              <span>Duration: ${s.duration ? s.duration + 's' : (s.status === 'running' ? 'Scanning...' : '--')}</span>
+              <span>${new Date(s.created_at).toLocaleTimeString()}</span>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    async function pollScans() {
+      if (!currentToken) return;
+      await loadScans();
+      if (currentScanId) {
+        const res = await fetch(`${API_BASE}/scans/${currentScanId}`, {
+          headers: { "Authorization": `Bearer ${currentToken}` }
+        });
+        if (res.ok) {
+          const s = await res.json();
+          if (s.status === 'completed') {
+            await selectScan(currentScanId, false);
+          }
+        }
+      }
+    }
+
+    async function selectScan(scanId, reloadList = true) {
+      currentScanId = scanId;
+      document.getElementById("export-buttons").classList.remove("hidden");
+      document.getElementById("findings-subtitle").innerText = `Scan ID: ${scanId.slice(0, 8)}...`;
+      if (reloadList) await loadScans();
+
+      const res = await fetch(`${API_BASE}/scans/${scanId}/findings`, {
+        headers: { "Authorization": `Bearer ${currentToken}` }
+      });
+      if (!res.ok) return;
+      const findings = await res.json();
+      const container = document.getElementById("findings-container");
+
+      if (findings.length === 0) {
+        container.innerHTML = `
+          <div class="h-64 flex flex-col items-center justify-center text-gray-400 text-sm">
+            <i class="fa-solid fa-shield-halved text-4xl mb-3 text-emerald-500"></i>
+            <span class="font-semibold text-white">Clean Security Posture!</span>
+            <span class="text-xs text-gray-500 mt-1">No vulnerabilities were discovered during this scan.</span>
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = findings.map(f => {
+        const sevClass = `badge-${f.severity.toLowerCase()}`;
+        return `
+          <div class="p-4 rounded-xl glass-card border border-gray-800 space-y-2">
+            <div class="flex items-start justify-between gap-2">
+              <div>
+                <span class="text-[11px] px-2 py-0.5 rounded font-bold uppercase tracking-wider ${sevClass}">${f.severity}</span>
+                <span class="ml-2 text-sm font-bold text-white">${f.title}</span>
+              </div>
+              <div class="text-right whitespace-nowrap">
+                <span class="text-xs font-mono text-cyan-400">CVSS ${f.cvss || 0.0}</span>
+                ${f.epss ? `<span class="ml-1 text-[10px] px-1.5 py-0.5 rounded bg-blue-950 text-blue-300 border border-blue-800 font-mono">EPSS ${(f.epss * 100).toFixed(1)}%</span>` : ''}
+                ${f.kev ? `<span class="ml-1 text-[10px] px-1.5 py-0.5 rounded bg-red-950 text-red-300 border border-red-800 font-bold animate-pulse"><i class="fa-solid fa-triangle-exclamation mr-1"></i>CISA KEV</span>` : ''}
+              </div>
+            </div>
+
+            <p class="text-xs text-gray-300 leading-relaxed">${f.description}</p>
+            
+            <div class="bg-black/50 p-2.5 rounded font-mono text-[11px] text-gray-400 border border-gray-900 break-all">
+              <span class="text-gray-500">Evidence:</span> ${f.evidence}
+            </div>
+
+            <div class="text-xs text-emerald-400 bg-emerald-950/30 p-2 rounded border border-emerald-900/50">
+              <strong class="text-emerald-300">Remediation:</strong> ${f.remediation}
+            </div>
+
+            <div class="flex items-center justify-between text-[10px] text-gray-500 pt-1">
+              <span>Rule: <code class="text-gray-400">${f.rule_id}</code> (${f.cwe})</span>
+              <span>Tool: <strong class="text-cyan-400">${f.tool}</strong></span>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    async function exportReport(format) {
+      if (!currentScanId) return;
+      const btn = event?.currentTarget;
+      const originalText = btn ? btn.innerHTML : null;
+      if (btn) btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin mr-1"></i>Downloading...`;
+
+      try {
+        const res = await fetch(`${API_BASE}/scans/${currentScanId}/report?format=${format}&token=${encodeURIComponent(currentToken)}`, {
+          headers: { "Authorization": `Bearer ${currentToken}` }
+        });
+
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          alert(err.detail || "Failed to download report");
+          return;
+        }
+
+        const blob = await res.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.style.display = 'none';
+        a.href = url;
+        const ext = format === 'pdf' ? 'pdf' : format === 'sarif' ? 'sarif' : format === 'csv' ? 'csv' : 'json';
+        a.download = `AegisAI_Report_${currentScanId.slice(0, 8)}.${ext}`;
+        document.body.appendChild(a);
+        a.click();
+        setTimeout(() => {
+          document.body.removeChild(a);
+          window.URL.revokeObjectURL(url);
+        }, 200);
+      } catch (err) {
+        window.open(`${API_BASE}/scans/${currentScanId}/report?format=${format}&token=${encodeURIComponent(currentToken)}`, '_blank');
+      } finally {
+        if (btn && originalText) btn.innerHTML = originalText;
+      }
+    }
+
+    initApp();
+  </script>
+</body>
+</html>

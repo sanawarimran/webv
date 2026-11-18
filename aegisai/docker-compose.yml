@@ -1,0 +1,81 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: aegisai-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: aegis_admin
+      POSTGRES_PASSWORD: aegis_secret_password
+      POSTGRES_DB: aegisai_db
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - aegis_backend_net
+    ports:
+      - "5432:5432"
+
+  redis:
+    image: redis:7-alpine
+    container_name: aegisai-redis
+    restart: unless-stopped
+    networks:
+      - aegis_backend_net
+    ports:
+      - "6379:6379"
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: aegisai-backend
+    restart: unless-stopped
+    environment:
+      - DATABASE_URL=postgresql://aegis_admin:aegis_secret_password@postgres:5432/aegisai_db
+      - REDIS_URL=redis://redis:6379/0
+      - SECRET_KEY=aegisai-super-secret-enterprise-jwt-key-change-in-prod
+      - ENVIRONMENT=development
+    ports:
+      - "8000:8000"
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - aegis_backend_net
+    volumes:
+      - ./app:/app/app
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - scan_outputs:/scans
+
+  celery_worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: aegisai-celery-worker
+    command: celery -A app.core.celery_app worker --loglevel=info --concurrency=4
+    restart: unless-stopped
+    environment:
+      - DATABASE_URL=postgresql://aegis_admin:aegis_secret_password@postgres:5432/aegisai_db
+      - REDIS_URL=redis://redis:6379/0
+      - SECRET_KEY=aegisai-super-secret-enterprise-jwt-key-change-in-prod
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - aegis_backend_net
+      - aegis_scanner_net
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - scan_outputs:/scans
+
+networks:
+  aegis_backend_net:
+    driver: bridge
+  aegis_scanner_net:
+    driver: bridge
+    internal: true  # Workers cannot access host internal LAN or internet directly unless routed
+
+volumes:
+  postgres_data:
+  scan_outputs:
